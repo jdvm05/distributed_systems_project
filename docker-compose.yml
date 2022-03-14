@@ -1,0 +1,57 @@
+version: "3.3"
+
+services:
+  redis:
+    image: redis
+    ports:
+      - 6379:6379
+    restart: always
+  redis-insight:
+    image: redislabs/redisinsight:latest
+    ports:
+      - 8001:8001
+    restart: always
+  location-2:
+    build: ./services/iot-device-2
+    command: ["python","-u","main.py"]
+    volumes:
+      - ./services/iot-device-2:/code
+    depends_on:
+      - redis
+    restart: always
+  location-1:
+    build: ./services/iot-device
+    command: ["python","-u","main.py"]
+    volumes:
+      - ./services/iot-device:/code
+    depends_on:
+      - redis
+    restart: always
+  web:
+    build: ./services/web_server
+    command: ["python","-u","main.py"]
+    volumes:
+      - ./services/web_server:/code
+    depends_on:
+      - postgres
+    ports:
+      - 5000:5000
+    restart: always
+  stream-processor:
+    build: ./services/stream-processor
+    command: ["python","-u","main.py"]
+    volumes:
+      - ./services/stream-processor:/code
+    depends_on:
+      - redis
+      - postgres
+    restart: always
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_DB: database
+      POSTGRES_PASSWORD: password
+    ports:
+            - 5432:5432
+    restart: always
